@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.routers.routers import root_handler
+from config import host, port, reload
 
 app = FastAPI()
 
@@ -11,10 +13,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def read_root():
-    return {
-        "status_code": 200,
-        "detail": "ok",
-        "result": "working"
-    }
+app.include_router(root_handler)
+
+if __name__ == "__main__":
+    from uvicorn import run as uvicorn_run
+
+    uvicorn_run("main:app", host=host, port=port, reload=reload)
