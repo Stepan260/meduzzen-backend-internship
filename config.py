@@ -1,8 +1,15 @@
 from dotenv import load_dotenv
-import os
+from pydantic_settings import BaseSettings
 
 load_dotenv()
+class Settings(BaseSettings):
+    HOST: str
+    PORT: int
+    RELOAD: bool
 
-host = os.getenv('HOST', '0.0.0.0')
-port = int(os.getenv('PORT', '5000'))
-reload = bool(os.getenv('RELOAD', True))
+
+    class Config:
+        env_file = ".env"
+
+
+settings = Settings()
