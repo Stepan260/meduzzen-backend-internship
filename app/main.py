@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers.routers import root_handler
-from config import host, port, reload
+from app.core.config import host, port, reload
 
 app = FastAPI()
 
