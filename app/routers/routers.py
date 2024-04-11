@@ -1,11 +1,8 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.postgres import get_session
-from app.db.redisdb import redis_connection
+from app.db.check_db import check_postgres_connection, check_redis_connection
 
 router = APIRouter()
-
 
 @router.get("/")
 def root_handler():
@@ -17,8 +14,20 @@ def root_handler():
 
 
 @router.get('/test_db')
-async def test_db(session: AsyncSession = Depends(get_session)):
-    return {
-        # if not session and not redis connection it means that there is not connection to dbs
-        'status_code': 200 if session and redis_connection else 500
-    }
+async def db_test():
+    postgres_conn = await check_postgres_connection()
+    redis_conn = await check_redis_connection()
+    if postgres_conn and redis_conn:
+        return {
+            "status_code": 200,
+            "detail": "Databases are connected and working.",
+            "result": {
+                "redis": "connected",
+                "postgres": "connected"
+            }
+        }
+    else:
+        return {
+            "status_code": 200,
+            "detail": "Databases are not connected"
+        }
