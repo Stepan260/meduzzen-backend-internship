@@ -1,4 +1,4 @@
-from config import settings
+from app.сore.config import settings
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 

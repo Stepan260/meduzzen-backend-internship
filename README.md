@@ -1,23 +1,24 @@
-# meduzzen-backend-internship
+# Meduzzen Backend Internship
 
-# creating a project
+## Creating a Project
 
-1.Clone the repository
+1. Clone the repository:
+    bash
+    git clone <repository_url>
+    
 
-used the command: git clone
+2. Install FastAPI:
+   bash
+   pip install fastapi uvicorn
 
-2.installed fastapi
 
-used the command: install fastapi uvicorn
+3. Running the Code:
+   uvicorn main:app --reload
 
-3.running code
+## Docker
 
-used the command:
-uvicorn main:app --reload
+1. Create and fill .env file.
 
-# Docker
-
-1.Create and fill .env
-
-2.Run command
-docker-compose up
+2. Run the following command:
+   docker-compose up
+    

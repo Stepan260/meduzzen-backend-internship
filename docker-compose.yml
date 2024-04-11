@@ -17,7 +17,7 @@ services:
     networks:
       - api_network
     volumes:
-      - ./media:/code/media
+      - .:/code
 
   postgres:
     image: postgres:14.0-alpine

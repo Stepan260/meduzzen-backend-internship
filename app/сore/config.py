@@ -23,7 +23,7 @@ class Settings(BaseSettings):
         return f"redis://{self.HOST_REDIS}:{self.PORT_REDIS}"
 
     class Config:
-        env_file = ".env"
+        env_file = "../../.env"
 
 
 settings = Settings()
