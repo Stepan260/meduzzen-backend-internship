@@ -9,7 +9,7 @@
 
 2. Install FastAPI:
    bash
-   pip install  -r requirements_dev.txt
+   pip install  -r requirements.txt
 
 3. Create .env 
 

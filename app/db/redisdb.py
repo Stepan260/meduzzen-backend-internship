@@ -1,4 +1,5 @@
 import redis.asyncio as redis
+
 from app.сore.config import settings
 
 
