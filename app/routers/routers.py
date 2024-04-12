@@ -12,22 +12,36 @@ def root_handler():
         "result": "working"
     }
 
-
-@router.get('/test_db')
-async def db_test():
+@router.get('/test_db/postgres')
+async def db_postgres_test():
     postgres_conn = await check_postgres_connection()
-    redis_conn = await check_redis_connection()
-    if postgres_conn and redis_conn:
+    if postgres_conn:
         return {
             "status_code": 200,
-            "detail": "Databases are connected and working.",
+            "detail": "PostgreSQL database is connected and working.",
             "result": {
-                "redis": "connected",
                 "postgres": "connected"
             }
         }
     else:
         return {
             "status_code": 200,
-            "detail": "Databases are not connected"
+            "detail": "PostgreSQL database is not connected."
+        }
+
+@router.get('/test_db/redis')
+async def db_redis_test():
+    redis_conn = await check_redis_connection()
+    if redis_conn:
+        return {
+            "status_code": 200,
+            "detail": "Redis database is connected and working.",
+            "result": {
+                "redis": "connected"
+            }
+        }
+    else:
+        return {
+            "status_code": 200,
+            "detail": "Redis database is not connected."
         }

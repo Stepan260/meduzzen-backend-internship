@@ -3,16 +3,18 @@
 ## Creating a Project
 
 1. Clone the repository:
-    bash
+            bash
     git clone <repository_url>
     
 
 2. Install FastAPI:
    bash
-   pip install fastapi uvicorn
+   pip install  -r requirements_dev.txt
+
+3. Create .env 
 
 
-3. Running the Code:
+4. Running the Code:
    uvicorn main:app --reload
 
 ## Docker
