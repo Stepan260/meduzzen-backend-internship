@@ -23,4 +23,7 @@
 
 2. Run the following command:
    docker-compose up
-    
+
+3. Create modal users.
+   alembic revision --autogenerate -m "add users table"
+   alembic upgrade head
