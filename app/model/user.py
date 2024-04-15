@@ -12,6 +12,8 @@ class Users(Base):
 
     uuid = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     username = Column(String, nullable=False)
+    password = Column(String, nullable=False)
     email = Column(String, nullable=False, unique=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
