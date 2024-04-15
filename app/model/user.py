@@ -1,4 +1,6 @@
 import uuid
+from sqlalchemy.dialects.postgresql import UUID
+
 from datetime import datetime
 
 from sqlalchemy import Column, DateTime, String
@@ -10,8 +12,9 @@ Base: DeclarativeMeta = declarative_base()
 class Users(Base):
     __tablename__ = "users"
 
-    uuid = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    uuid = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     username = Column(String, nullable=False)
+    password = Column(String, nullable=False)
     email = Column(String, nullable=False, unique=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

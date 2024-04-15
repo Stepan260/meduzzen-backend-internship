@@ -5,8 +5,8 @@ from pydantic import BaseModel, EmailStr
 
 
 class UserBase(BaseModel):
-    username: str
-    email: EmailStr
+    username: Optional[str]
+    email: Optional[EmailStr]
 
 
 class UserCreate(UserBase):
@@ -19,12 +19,17 @@ class UserUpdate(UserBase):
 
 class UserDetail(UserBase):
     uuid: str
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime = None
+    updated_at: datetime = None
 
 
 class UserListResponse(BaseModel):
     users: List[UserDetail]
+
+
+class UserListItem(BaseModel):
+    uuid: str
+    username: str
 
 
 class SignInRequest(BaseModel):
