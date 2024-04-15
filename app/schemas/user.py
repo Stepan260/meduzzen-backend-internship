@@ -13,8 +13,10 @@ class UserCreate(UserBase):
     password: str
 
 
-class UserUpdate(UserBase):
-    password: Optional[str]
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
 
 
 class UserDetail(UserBase):
@@ -23,13 +25,13 @@ class UserDetail(UserBase):
     updated_at: datetime = None
 
 
-class UserListResponse(BaseModel):
-    users: List[UserDetail]
-
-
 class UserListItem(BaseModel):
     uuid: str
     username: str
+
+
+class UserListResponse(BaseModel):
+    users: List[UserListItem]
 
 
 class SignInRequest(BaseModel):
