@@ -23,8 +23,12 @@ class Settings(BaseSettings):
     def REDIS_URL(self) -> str:
         return f"redis://{self.HOST_REDIS}:{self.PORT_REDIS}"
 
+    @property
+    def ALEMBIC_URL(self) -> str:
+        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
     class Config:
-        env_file = "../../.env"
+        env_file = ".env"
 
 
 settings = Settings()

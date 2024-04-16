@@ -23,4 +23,6 @@
 
 2. Run the following command:
    docker-compose up
-    
+
+3. Run migration: 
+   alembic upgrade head
