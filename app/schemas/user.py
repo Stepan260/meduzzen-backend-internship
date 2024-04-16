@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import BaseModel, EmailStr
+import bcrypt
+from pydantic import BaseModel, EmailStr, validator, UUID4
 
 
 class UserBase(BaseModel):
@@ -12,6 +13,10 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+    @validator('password')
+    def hash_password(cls, v):
+        return bcrypt.hashpw(v.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
@@ -20,7 +25,7 @@ class UserUpdate(BaseModel):
 
 
 class UserDetail(UserBase):
-    uuid: str
+    uuid: UUID4
     created_at: datetime = None
     updated_at: datetime = None
 

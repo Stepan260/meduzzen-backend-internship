@@ -3,9 +3,8 @@ from typing import List
 from datetime import datetime
 
 from sqlalchemy import update, delete
-
-from sqlalchemy.future import select as async_select
 from starlette import status
+from sqlalchemy.future import select as async_select
 
 from app.model.user import Base
 
@@ -29,38 +28,39 @@ class BaseRepository:
         return rows
 
     async def get_one(self, **params) -> Base:
-            query = async_select(self.model).filter_by(**params)
-            result = await self.session.execute(query)
-            db_row = await result.scalar_one_or_none()
-            return db_row
+        query = async_select(self.model).filter_by(**params)
+        result = await self.session.execute(query)
+        db_row = result.scalar_one_or_none()
+        return db_row
 
-    async def get_many(self, **params) -> List[Base]:
-            query = async_select(self.model).filter_by(**params)
-            result = await self.session.execute(query)
-            db_rows = await result.scalars().all()
-            return db_rows
+    async def get_many(self, skip: int = 1, limit: int = 10, **params) -> List[Base]:
+        offset = (skip - 1) * limit
+        query = async_select(self.model).filter_by(**params).offset(offset).limit(limit)
+        result = await self.session.execute(query)
+        db_rows = result.scalars().all()
+        return db_rows
 
     async def update_one(self, model_uuid: str, data: dict) -> Base:
-                query = (
-                    update(self.model)
-                    .where(self.model.uuid == model_uuid)
-                    .values(**data)
-                    .returning(self.model)
-                )
-                res = await self.session.execute(query)
-                res.updated_at = datetime.now()
-                await self.session.commit()
-                return res.scalar_one()
+        query = (
+            update(self.model)
+            .where(self.model.uuid == model_uuid)
+            .values(**data)
+            .returning(self.model)
+        )
+        res = await self.session.execute(query)
+        res.updated_at = datetime.now()
+        await self.session.commit()
+        return res.scalar_one()
 
     async def delete_one(self, model_uuid: str) -> Base:
-                query = (
-                    delete(self.model)
-                    .where(self.model.uuid == model_uuid)
-                    .returning(self.model)
-                )
-                res = await self.session.execute(query)
-                await self.session.commit()
-                return res.scalar_one()
+        query = (
+            delete(self.model)
+            .where(self.model.uuid == model_uuid)
+            .returning(self.model)
+        )
+        res = await self.session.execute(query)
+        await self.session.commit()
+        return res.scalar_one()
 
     async def get_one_by_params_or_404(self, **params) -> Base:
         db_row = await self.get_one(**params)

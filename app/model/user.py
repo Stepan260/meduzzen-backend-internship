@@ -1,9 +1,8 @@
 import uuid
-from sqlalchemy.dialects.postgresql import UUID
-
 from datetime import datetime
 
 from sqlalchemy import Column, DateTime, String
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 
 Base: DeclarativeMeta = declarative_base()
@@ -18,4 +17,3 @@ class Users(Base):
     email = Column(String, nullable=False, unique=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
