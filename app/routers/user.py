@@ -1,12 +1,12 @@
 from uuid import UUID
 from typing import List
 
-from fastapi import APIRouter, Depends, Response,HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession, session
+from fastapi import APIRouter, Depends, Response
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from app.schemas.user import SignUpRequest, UserBase, UserUpdate, UserDetail
-from app.service.users_service import UserService, UserAlreadyExistsException
+from app.service.users_service import UserService
 from app.db.postgres import get_session
 from app.repository.users_repository import UserRepository
 
@@ -21,13 +21,7 @@ async def get_user_service(session: AsyncSession = Depends(get_session)) -> User
 @router.post('/', response_model=UserBase)
 async def create_user(user_create: SignUpRequest,
                       user_service: UserService = Depends(get_user_service)):
-    try:
-        return await user_service.create_user(user_create.model_dump())
-    except UserAlreadyExistsException:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already exists",
-        )
+    return await user_service.create_user(user_create.dict())
 
 
 @router.get('/{user_id}', response_model=UserBase)

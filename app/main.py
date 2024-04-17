@@ -7,6 +7,7 @@ from app.routers.routers import router
 from app.routers import user
 
 app = FastAPI()
+
 app.include_router(router)
 app.add_middleware(
     CORSMiddleware,
