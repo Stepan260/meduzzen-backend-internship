@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 Base: DeclarativeMeta = declarative_base()
 
 
-class Users(Base):
+class User(Base):
     __tablename__ = "users"
 
     uuid = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

@@ -8,6 +8,14 @@ from app.repository.users_repository import UserRepository
 from app.schemas.user import UserDetail, UserUpdate
 
 
+class UserAlreadyExistsException(HTTPException):
+    def __init__(self, detail: str = "User already exists"):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail
+        )
+
+
 class UserService:
     def __init__(self, session: AsyncSession, repository: UserRepository):
         self.repository = repository
@@ -16,10 +24,7 @@ class UserService:
     async def create_user(self, user_create: dict) -> UserDetail:
         db_user = await self.repository.get_one(email=user_create.get('email'))
         if db_user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Object not found",
-            )
+            raise UserAlreadyExistsException()
 
         user_detail = await self.repository.create_one(user_create)
         return user_detail
