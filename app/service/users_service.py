@@ -2,12 +2,10 @@ from typing import List
 from uuid import UUID
 
 import bcrypt
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.repository.users_repository import UserRepository
-from app.schemas.user import UserDetail, UserUpdate
-from app.сore.сustom_exception import CustomHTTPException
+from app.schemas.user import UserDetail, UserUpdate, UserBase
+from app.сore.сustom_exception import UserNotFound
 
 
 class UserService:
@@ -21,30 +19,21 @@ class UserService:
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         db_user = await self.repository.get_one(email=email)
         if db_user:
-            raise CustomHTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"User with email '{user_create['email']}' already exists"
-            )
+            raise UserNotFound(identifier=email)
         user_create['password'] = hashed_password
         user_detail = await self.repository.create_one(user_create)
         return user_detail
 
-    async def get_user_by_id(self, user_uuid: UUID) -> UserDetail:
-        user_detail = await self.repository.get_one(uuid=user_uuid)
-        if not user_detail:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
-            )
-        return user_detail
+    async def get_user_by_id(self, user_uuid: UUID) -> UserBase:
+        user = await self.repository.get_one(uuid=user_uuid)
+        if not user:
+            raise UserNotFound(identifier=user_uuid)
+        return user
 
     async def update_user(self, user_uuid: UUID, user_update: UserUpdate) -> UserDetail:
         user_detail = await self.repository.get_one(uuid=user_uuid)
         if not user_detail:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
-            )
+            raise UserNotFound(identifier=user_uuid)
 
         updated_user = await self.repository.update_one(user_uuid, user_update.dict(exclude_unset=True))
         return updated_user
@@ -56,9 +45,6 @@ class UserService:
     async def delete_user(self, user_uuid: UUID) -> None:
         user_detail = await self.repository.get_one(uuid=user_uuid)
         if not user_detail:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
-            )
+            raise UserNotFound(identifier=user_uuid)
 
         await self.repository.delete_one(str(user_uuid))

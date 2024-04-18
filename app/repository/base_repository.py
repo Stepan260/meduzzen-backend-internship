@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from app.model.user import Base
-from app.сore.сustom_exception import CustomHTTPException
+from app.сore.сustom_exception import ObjectNotFound
 
 ModelType = TypeVar("ModelType")
 
@@ -68,7 +68,7 @@ class BaseRepository:
     async def get_one_by_params_or_404(self, **params) -> Base:
         db_row = await self.get_one(**params)
         if not db_row:
-            raise CustomHTTPException(
+            raise ObjectNotFound(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Object not found",
             )
