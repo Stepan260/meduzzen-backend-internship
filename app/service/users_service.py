@@ -1,11 +1,13 @@
 from typing import List
 from uuid import UUID
 
+import bcrypt
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repository.users_repository import UserRepository
 from app.schemas.user import UserDetail, UserUpdate
+from app.сore.сustom_exception import CustomHTTPException
 
 
 class UserService:
@@ -15,14 +17,15 @@ class UserService:
 
     async def create_user(self, user_create: dict) -> UserDetail:
         email = user_create.get('email')
+        password = user_create.get('password')
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         db_user = await self.repository.get_one(email=email)
-
         if db_user:
-            raise HTTPException(
+            raise CustomHTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"User with email '{email}' already exists"
+                detail=f"User with email '{user_create['email']}' already exists"
             )
-
+        user_create['password'] = hashed_password
         user_detail = await self.repository.create_one(user_create)
         return user_detail
 

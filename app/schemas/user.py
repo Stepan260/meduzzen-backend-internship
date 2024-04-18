@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 
-import bcrypt
-from pydantic import BaseModel, EmailStr, validator, UUID4
+from pydantic import BaseModel, EmailStr, UUID4
 
 
 class UserBase(BaseModel):
@@ -12,10 +11,6 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-
-    @validator('password')
-    def hash_password(cls, v):
-        return bcrypt.hashpw(v.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 
 class UserUpdate(BaseModel):

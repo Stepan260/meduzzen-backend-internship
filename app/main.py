@@ -1,7 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from loguru import logger
 
+from app.service.users_service import CustomHTTPException
 from app.сore.config import settings
 from app.routers.routers import router
 from app.routers import user
@@ -9,6 +11,8 @@ from app.routers import user
 app = FastAPI()
 
 app.include_router(router)
+app.include_router(user.router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,7 +21,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(user.router)
+
+@app.exception_handler(CustomHTTPException)
+async def custom_http_exception_handler(request: Request, exc: CustomHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
+
 
 logger.add("app.log", rotation="250 MB", compression="zip", level="INFO")
 
