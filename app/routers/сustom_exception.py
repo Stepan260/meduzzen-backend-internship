@@ -5,12 +5,17 @@ from fastapi.responses import JSONResponse
 
 class ObjectNotFound(Exception):
     def __init__(self, identifier: Any, model_name: str) -> None:
-        super().__init__(f"{model_name} с указанным идентификатором - {identifier} не найден")
+        super().__init__(f"{model_name} with the specified identifier - {identifier} not found")
 
 
 class UserNotFound(ObjectNotFound):
     def __init__(self, identifier: Any, model_name: str = "user"):
         super().__init__(identifier, model_name)
+
+
+class UserAlreadyExist(Exception):
+    def __init__(self, identifier: str, model_name: str = "user"):
+        super().__init__(f"{model_name} with the specified email {identifier} already exists.")
 
 
 def handle_object_not_found(_: Request, exc: ObjectNotFound) -> JSONResponse:

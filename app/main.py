@@ -7,7 +7,7 @@ from starlette import status
 from app.сore.config import settings
 from app.routers.routers import router
 from app.routers import user
-from app.сore.сustom_exception import ObjectNotFound
+from app.routers.сustom_exception import ObjectNotFound, UserAlreadyExist
 
 app = FastAPI()
 
@@ -28,6 +28,14 @@ async def handle_object_not_found(_: Request, exc: ObjectNotFound) -> JSONRespon
     return JSONResponse(
         content={"message": str(exc)},
         status_code=status.HTTP_404_NOT_FOUND
+    )
+
+
+@app.exception_handler(UserAlreadyExist)
+async def handle_user_already_exist(_: Request, exc: UserAlreadyExist) -> JSONResponse:
+    return JSONResponse(
+        content={"message": str(exc)},
+        status_code=status.HTTP_409_CONFLICT
     )
 
 

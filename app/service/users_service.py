@@ -5,7 +5,7 @@ import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repository.users_repository import UserRepository
 from app.schemas.user import UserDetail, UserUpdate, UserBase
-from app.сore.сustom_exception import UserNotFound
+from app.routers.сustom_exception import UserNotFound, UserAlreadyExist
 
 
 class UserService:
@@ -19,7 +19,7 @@ class UserService:
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         db_user = await self.repository.get_one(email=email)
         if db_user:
-            raise UserNotFound(identifier=email)
+            raise UserAlreadyExist(identifier=email)
         user_create['password'] = hashed_password
         user_detail = await self.repository.create_one(user_create)
         return user_detail
@@ -31,7 +31,7 @@ class UserService:
         return user
 
     async def update_user(self, user_uuid: UUID, user_update: UserUpdate) -> UserDetail:
-        user_detail = await self.repository.get_one(uuid=user_uuid)
+        user_detail = await self.repository.get_one(uuid=str(user_uuid))
         if not user_detail:
             raise UserNotFound(identifier=user_uuid)
 
