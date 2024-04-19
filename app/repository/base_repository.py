@@ -12,7 +12,7 @@ from app.service.сustom_exception import ObjectNotFound
 ModelType = TypeVar("ModelType", bound=Base)
 
 
-class BaseRepository:
+class BaseRepository(Generic[ModelType]):
     def __init__(self, session: AsyncSession, model: Generic[ModelType]):
         self.session = session
         self.model = model
