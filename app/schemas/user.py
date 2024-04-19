@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, UUID4
 
 
 class UserBase(BaseModel):
@@ -20,7 +20,7 @@ class UserUpdate(BaseModel):
 
 
 class UserDetail(UserBase):
-    uuid: str
+    uuid: UUID4
     created_at: datetime = None
     updated_at: datetime = None
 
