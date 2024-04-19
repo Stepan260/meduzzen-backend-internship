@@ -7,7 +7,7 @@ from starlette import status
 from app.сore.config import settings
 from app.routers.routers import router
 from app.routers import user
-from app.routers.сustom_exception import ObjectNotFound, UserAlreadyExist
+from app.service.сustom_exception import ObjectNotFound, UserAlreadyExist
 
 app = FastAPI()
 

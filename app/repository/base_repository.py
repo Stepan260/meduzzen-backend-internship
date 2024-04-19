@@ -1,4 +1,4 @@
-from typing import TypeVar, List, Type, Generic
+from typing import TypeVar, List, Generic
 from datetime import datetime
 from uuid import UUID
 
@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from app.model.user import Base
-from app.routers.сustom_exception import ObjectNotFound
+from app.service.сustom_exception import ObjectNotFound
 
 ModelType = TypeVar("ModelType", bound=Base)
 

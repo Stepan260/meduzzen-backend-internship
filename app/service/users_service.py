@@ -1,11 +1,14 @@
 from typing import List
 from uuid import UUID
 
+
 import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
+
+
 from app.repository.users_repository import UserRepository
 from app.schemas.user import UserDetail, UserUpdate, UserBase
-from app.routers.сustom_exception import UserNotFound, UserAlreadyExist
+from app.service.сustom_exception import UserNotFound, UserAlreadyExist
 
 
 class UserService:
