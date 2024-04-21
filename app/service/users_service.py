@@ -51,3 +51,9 @@ class UserService:
             raise UserNotFound(identifier=user_uuid)
 
         await self.repository.delete_one(str(user_uuid))
+
+    async def get_user_by_email(self, email: str) -> UserDetail:
+        user = await self.repository.get_one(email=email)
+        if not user:
+            raise UserNotFound(identifier=email)
+        return user
