@@ -47,5 +47,5 @@ volumes:
   postgres_data:
 
 networks:
-    api_network:
-        driver: bridge
+  api_network:
+    driver: bridge
