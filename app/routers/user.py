@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from app.schemas.user import SignUpRequest, UserBase, UserUpdate, UserDetail
+from app.service.auth_service import AuthService
 from app.service.users_service import UserService
 from app.db.postgres import get_session
 from app.repository.users_repository import UserRepository
@@ -32,8 +33,9 @@ async def get_user_by_id(user_id: UUID,
 
 @router.put('/{user_id}', response_model=UserBase)
 async def update_user(user_id: UUID, user_update: UserUpdate,
+                      current_user: UserDetail = Depends(AuthService.get_current_user),
                       user_service: UserService = Depends(get_user_service)):
-    return await user_service.update_user(user_id, user_update)
+    return await user_service.update_user(user_id, user_update, current_user)
 
 
 @router.get("/users/", response_model=List[UserDetail])
@@ -44,6 +46,7 @@ async def get_all_users(skip: int = 1, limit: int = 10,
 
 @router.delete('/{user_id}', response_model=None, response_class=Response)
 async def delete_user(user_id: UUID,
-                      user_service: UserService = Depends(get_user_service)):
-    await user_service.delete_user(user_id)
+                      user_service: UserService = Depends(get_user_service),
+                      current_user: UserDetail = Depends(AuthService.get_current_user)):
+    await user_service.delete_user(user_id, current_user)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

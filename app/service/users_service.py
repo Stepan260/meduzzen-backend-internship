@@ -1,14 +1,12 @@
 from typing import List
 from uuid import UUID
 
-
 import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
 from app.repository.users_repository import UserRepository
 from app.schemas.user import UserDetail, UserUpdate, UserBase
-from app.service.сustom_exception import UserNotFound, UserAlreadyExist
+from app.service.сustom_exception import UserNotFound, UserAlreadyExist, UserPermissionDenied
 
 
 class UserService:
@@ -33,10 +31,17 @@ class UserService:
             raise UserNotFound(identifier=user_uuid)
         return user
 
-    async def update_user(self, user_uuid: UUID, user_update: UserUpdate) -> UserDetail:
+    async def update_user(self, user_uuid: UUID, user_update: UserUpdate, current_user: UserDetail) -> UserDetail:
+        if current_user.uuid != user_uuid:
+            raise UserPermissionDenied()
+
         user_detail = await self.repository.get_one(uuid=str(user_uuid))
         if not user_detail:
             raise UserNotFound(identifier=user_uuid)
+
+        if user_update.password:
+            hashed_password = bcrypt.hashpw(user_update.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            user_update.password = hashed_password
 
         updated_user = await self.repository.update_one(user_uuid, user_update.dict(exclude_unset=True))
         return updated_user
@@ -45,7 +50,10 @@ class UserService:
         users = await self.repository.get_many(skip=skip, limit=limit)
         return users
 
-    async def delete_user(self, user_uuid: UUID) -> None:
+    async def delete_user(self, user_uuid: UUID, current_user: UserDetail) -> None:
+        if current_user.uuid != user_uuid:
+            raise UserPermissionDenied()
+
         user_detail = await self.repository.get_one(uuid=user_uuid)
         if not user_detail:
             raise UserNotFound(identifier=user_uuid)
