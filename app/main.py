@@ -7,7 +7,7 @@ from starlette import status
 from app.сore.config import settings
 from app.routers.routers import router
 from app.routers import user, auth
-from app.service.сustom_exception import ObjectNotFound, UserAlreadyExist
+from app.service.сustom_exception import ObjectNotFound, UserAlreadyExist, UserNotAuthenticated
 
 app = FastAPI()
 
@@ -39,6 +39,13 @@ async def handle_user_already_exist(_: Request, exc: UserAlreadyExist) -> JSONRe
         status_code=status.HTTP_409_CONFLICT
     )
 
+
+@app.exception_handler(UserNotAuthenticated)
+async def handle_user_already_exist(_: Request, exc: UserAlreadyExist) -> JSONResponse:
+    return JSONResponse(
+        content={"message": str(exc)},
+        status_code=status.HTTP_401_UNAUTHORIZED
+    )
 
 logger.add("app.log", rotation="250 MB", compression="zip", level="INFO")
 
