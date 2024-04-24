@@ -6,7 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repository.users_repository import UserRepository
 from app.schemas.user import UserDetail, UserUpdate, UserBase
-from app.service.сustom_exception import UserNotFound, UserAlreadyExist, UserPermissionDenied
+
+from app.service.сustom_exception import UserNotFound, UserAlreadyExist, UserPermissionDenied, UserNotAuthenticated
+
 
 
 class UserService:
@@ -56,7 +58,7 @@ class UserService:
 
         user_detail = await self.repository.get_one(uuid=user_uuid)
         if not user_detail:
-            raise UserNotFound(identifier=user_uuid)
+            raise UserNotAuthenticated()
 
         await self.repository.delete_one(str(user_uuid))
 
