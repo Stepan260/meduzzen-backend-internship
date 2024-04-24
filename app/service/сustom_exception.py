@@ -16,6 +16,10 @@ class UserAlreadyExist(Exception):
         super().__init__(f"{model_name} with the specified email {identifier} already exists.")
 
 
+class UserPermissionDenied(Exception):
+    def __init__(self) -> None:
+        super().__init__(f"You do not have permission to update this user")
+
 class UserNotAuthenticated(Exception):
     def __init__(self) -> None:
         super().__init__("User is not authenticated")
