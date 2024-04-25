@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repository.company_repository import CompanyRepository
 
 from app.schemas.company import FullCompany, CompanyUpdate, CompaniesListResponse, CompanyCreate
-from app.service.сustom_exception import UserPermissionDenied, UserNotFound
+from app.service.сustom_exception import UserPermissionDenied, UserNotFound, CompanyAlreadyExists
 
 
 class CompanyService:
@@ -21,7 +21,7 @@ class CompanyService:
 
         existing_company = await self.repository.get_one(company_name=company_name, owner_uuid=owner_uuid)
         if existing_company:
-            raise HTTPException(status_code=404, detail="Item not found")
+            raise CompanyAlreadyExists()
 
         company_data = {
             'company_name': company_name,
