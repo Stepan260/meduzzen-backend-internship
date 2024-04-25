@@ -6,10 +6,10 @@ from sqlalchemy import update, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from app.model.user import Base
+from app.model.base_models import BaseClass
 from app.service.сustom_exception import ObjectNotFound
 
-ModelType = TypeVar("ModelType", bound=Base)
+ModelType = TypeVar("ModelType", bound=BaseClass)
 
 
 class BaseRepository(Generic[ModelType]):

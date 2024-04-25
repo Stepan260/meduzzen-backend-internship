@@ -13,7 +13,7 @@ from app.db.postgres import get_session
 from app.repository.users_repository import UserRepository
 from app.schemas.auth import SignUpRequest, SignInRequest, AccessToken
 from app.schemas.user import UserDetail
-from app.service.сustom_exception import UserAlreadyExist, UserNotFound
+from app.service.сustom_exception import UserNotFound, UserAlreadyExists
 from app.utils.auth import create_jwt_token, verify_jwt_token
 from app.utils.hash_password import verify_password, hash_password
 
@@ -32,7 +32,7 @@ class AuthService:
 
         db_user = await self.repository.get_one(email=email)
         if db_user:
-            raise UserAlreadyExist(identifier=email)
+            raise UserAlreadyExists(identifier=email)
 
         user_with_hashed_password = user_create.copy(update={"password": hashed_password})
 
