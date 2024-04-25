@@ -18,6 +18,7 @@ class UserAlreadyExist(Exception):
 
 class UserPermissionDenied(Exception):
     def __init__(self) -> None:
+
         super().__init__(f"You do not have permission to update this")
 
 
@@ -26,3 +27,8 @@ class CompanyAlreadyExists(Exception):
         super().__init__(
            f"There is already a company name"
         )
+        super().__init__(f"You do not have permission to update this user")
+
+class UserNotAuthenticated(Exception):
+    def __init__(self) -> None:
+        super().__init__("User is not authenticated")
