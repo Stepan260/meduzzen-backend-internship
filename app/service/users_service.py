@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repository.users_repository import UserRepository
 from app.schemas.user import UserDetail, UserUpdate, UserBase
-from app.service.сustom_exception import UserNotFound, UserAlreadyExist, UserPermissionDenied
+from app.service.сustom_exception import UserNotFound, UserPermissionDenied, UserAlreadyExists
 
 
 class UserService:
@@ -20,7 +20,7 @@ class UserService:
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         db_user = await self.repository.get_one(email=email)
         if db_user:
-            raise UserAlreadyExist(identifier=email)
+            raise UserAlreadyExists(identifier=email)
         user_create['password'] = hashed_password
         user_detail = await self.repository.create_one(user_create)
         return user_detail

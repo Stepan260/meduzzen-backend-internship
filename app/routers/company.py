@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.company import FullCompany, CompanyBase, CompaniesListResponse, CompanyCreate, CompanyUpdate
@@ -23,14 +23,14 @@ async def get_company_by_id(company_id: UUID, company_service: CompanyService = 
     return await company_service.get_company_by_id(company_id)
 
 
-@router.post("/", response_model=CompanyBase, status_code=201)
+@router.post("/", response_model=FullCompany, status_code=201)
 async def create_company(company_create: CompanyCreate, company_service: CompanyService = Depends(get_company_service),
                          current_user: UserDetail = Depends(AuthService.get_current_user)):
     owner_uuid = current_user.uuid
     return await company_service.create_company(company_create, owner_uuid)
 
 
-@router.put("/{company_id}/update_info/", response_model=CompanyBase)
+@router.put("/{company_id}", response_model=CompanyBase)
 async def update_company(company_uuid: UUID, company_update: CompanyUpdate,
                          company_service: CompanyService = Depends(get_company_service),
                          current_user: UserDetail = Depends(AuthService.get_current_user)):

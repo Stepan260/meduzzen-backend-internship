@@ -7,7 +7,7 @@ from starlette import status
 from app.сore.config import settings
 from app.routers.routers import router
 from app.routers import user, auth, company
-from app.service.сustom_exception import ObjectNotFound, UserAlreadyExist, UserPermissionDenied, CompanyAlreadyExists
+from app.service.сustom_exception import ObjectNotFound, UserPermissionDenied, ObjectAlreadyExist
 
 app = FastAPI()
 
@@ -33,8 +33,8 @@ async def handle_object_not_found(_: Request, exc: ObjectNotFound) -> JSONRespon
     )
 
 
-@app.exception_handler(UserAlreadyExist)
-async def handle_user_already_exist(_: Request, exc: UserAlreadyExist) -> JSONResponse:
+@app.exception_handler(ObjectAlreadyExist)
+async def handle_object_already_exist(_: Request, exc: ObjectAlreadyExist) -> JSONResponse:
     return JSONResponse(
         content={"message": str(exc)},
         status_code=status.HTTP_409_CONFLICT
@@ -46,14 +46,6 @@ async def handler_user_permission_denied(_: Request, exc: UserPermissionDenied) 
     return JSONResponse(
         content={"message": str(exc)},
         status_code=status.HTTP_403_FORBIDDEN
-    )
-
-
-@app.exception_handler(CompanyAlreadyExists)
-async def handler_user_permission_denied(_: Request, exc: CompanyAlreadyExists) -> JSONResponse:
-    return JSONResponse(
-        content={"message": str(exc)},
-        status_code=status.HTTP_409_CONFLICT
     )
 
 
