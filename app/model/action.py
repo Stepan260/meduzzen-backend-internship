@@ -1,7 +1,11 @@
 import uuid
+
 from sqlalchemy import Column, ForeignKey, DateTime, Enum
 from sqlalchemy.dialects.postgresql import UUID
+
+
 from sqlalchemy.sql import func
+
 from app.utils.enum import CompanyRole
 from app.model.base_models import BaseClass
 

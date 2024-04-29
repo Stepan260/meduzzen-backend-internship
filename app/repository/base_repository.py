@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import update, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
+
 
 from app.model.base_models import BaseClass
 from app.service.сustom_exception import ObjectNotFound

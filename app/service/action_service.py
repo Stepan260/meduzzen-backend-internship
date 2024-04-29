@@ -1,8 +1,6 @@
 from uuid import UUID, uuid4
-from fastapi import HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
 
 from app.repository.action_repository import ActionRepository
 from app.repository.company_repository import CompanyRepository
@@ -48,10 +46,10 @@ class ActionsService:
             elif existing_action.role == CompanyRole.REQUESTED:
                 return await self.action_repository.update_one(existing_action.uuid, dict(role=CompanyRole.MEMBER))
 
-        data = invite_create.dict()
-        data["role"] = CompanyRole.INVITED
-        data["uuid"] = uuid4()
-        return await self.action_repository.create_one(data)
+        return await self.action_repository.create_one(dict(
+            **invite_create.model_dump(),
+            role=CompanyRole.INVITED
+        ))
 
     async def cancel_invite(self, action_uuid: UUID, current_user_uuid: UUID):
         invite = await self.action_repository.get_one_by_params_or_404(uuid=action_uuid)
