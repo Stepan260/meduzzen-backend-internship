@@ -69,7 +69,7 @@ class BaseRepository(Generic[ModelType]):
         db_row = await self.get_one(**params)
         if not db_row:
             raise ObjectNotFound(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Object not found",
+                identifier="none",
+                model_name="None"
             )
         return db_row

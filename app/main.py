@@ -6,8 +6,8 @@ from starlette import status
 
 from app.сore.config import settings
 from app.routers.routers import router
-from app.routers import user, auth, company
-from app.service.сustom_exception import ObjectNotFound, UserPermissionDenied, ObjectAlreadyExist
+from app.routers import user, auth, company, action
+from app.service.сustom_exception import ObjectNotFound, UserPermissionDenied, ObjectAlreadyExist, ActionError
 
 app = FastAPI()
 
@@ -15,6 +15,7 @@ app.include_router(router)
 app.include_router(user.router)
 app.include_router(auth.router)
 app.include_router(company.router)
+app.include_router(action.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -46,6 +47,14 @@ async def handler_user_permission_denied(_: Request, exc: UserPermissionDenied) 
     return JSONResponse(
         content={"message": str(exc)},
         status_code=status.HTTP_403_FORBIDDEN
+    )
+
+
+@app.exception_handler(ActionError)
+async def handler_user_action_error(_: Request, exc: ActionError) -> JSONResponse:
+    return JSONResponse(
+        content={"message": str(exc)},
+        status_code=status.HTTP_409_CONFLICT
     )
 
 
