@@ -8,7 +8,13 @@ from app.utils.enum import CompanyRole
 
 
 class ActionBaseSchema(BaseModel):
+    user_uuid: UUID
     uuid: UUID
+
+
+class AdminUser(BaseModel):
+    user_uuid: UUID
+    company_uuid: UUID
 
 
 class ActionSchema(ActionBaseSchema):
@@ -62,3 +68,7 @@ class UserInvitesResponse(BaseModel):
 
 class CompanyUsersResponse(BaseModel):
     users: List[ActionSchema]
+
+
+class AdminUsersResponse(BaseModel):
+    admin_users: List[AdminUser]

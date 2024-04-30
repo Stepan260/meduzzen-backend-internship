@@ -22,11 +22,10 @@ class ActionsService:
         self.company_repository = company_repository
         self.user_repository = user_repository
 
-
     async def remove_user(self, company_uuid: UUID, user_uuid: UUID, owner_uuid: UUID):
         company = await self.company_repository.get_one_by_params_or_404(uuid=company_uuid)
         if company.owner_uuid != owner_uuid:
-            raise ActionError("You don't have permission to remove users from this company")
+            raise UserPermissionDenied()
 
         user_role = await self.action_repository.get_one(company_uuid=company_uuid, user_uuid=user_uuid)
         if not user_role:
@@ -37,7 +36,6 @@ class ActionsService:
             return {"message": "User removed successfully from the company"}
         else:
             raise ActionError("User cannot be removed")
-
 
     async def get_company_users(self, company_uuid: UUID, user_uuid: UUID, skip: int = 1, limit: int = 10) -> dict:
         company = await self.company_repository.get_one_by_params_or_404(uuid=company_uuid)
@@ -56,3 +54,51 @@ class ActionsService:
             raise CompanyNotFound(identifier='uuid')
 
         return {"users": company_users}
+
+    async def assign_admin(self, company_uuid: UUID, user_uuid: UUID, owner_uuid: UUID):
+        company = await self.company_repository.get_one_by_params_or_404(uuid=company_uuid)
+
+        if company.owner_uuid != owner_uuid:
+            raise UserPermissionDenied()
+
+        action = await self.action_repository.get_one_by_params_or_404(
+            company_uuid=company_uuid,
+            user_uuid=user_uuid
+        )
+
+        if action.role != CompanyRole.MEMBER:
+            raise ActionError('User is not a member')
+
+        await self.action_repository.update_one(action.uuid, {"role": CompanyRole.ADMIN})
+
+        return {"message": "User assigned as admin successfully"}
+
+    async def remove_admin(self, company_uuid: UUID, user_uuid: UUID, owner_uuid: UUID):
+        company = await self.company_repository.get_one_by_params_or_404(uuid=company_uuid)
+
+        if company.owner_uuid != owner_uuid:
+            raise UserPermissionDenied()
+
+        action = await self.action_repository.get_one_by_params_or_404(
+            company_uuid=company_uuid,
+            user_uuid=user_uuid
+        )
+
+        await self.action_repository.update_one(action.uuid, {"role": CompanyRole.MEMBER})
+
+        return {"message": "User removed from admin successfully"}
+
+    async def get_company_admin(self, company_uuid: UUID, owner_uuid: UUID, skip: int = 1, limit: int = 10) -> dict:
+        company = await self.company_repository.get_one_by_params_or_404(uuid=company_uuid)
+
+        if company.owner_uuid != owner_uuid:
+            raise UserPermissionDenied()
+
+        admin_users = await self.action_repository.get_many(
+            company_uuid=company_uuid,
+            role=CompanyRole.ADMIN,
+            skip=skip,
+            limit=limit
+        )
+
+        return {"admin_users": admin_users}
