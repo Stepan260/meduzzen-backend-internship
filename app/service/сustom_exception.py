@@ -13,6 +13,11 @@ class ObjectAlreadyExist(Exception):
         super().__init__(f"{model_name} with the specified identifier - {identifier} already exist")
 
 
+class ActionError(Exception):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
 """User handlers"""
 
 
@@ -42,3 +47,7 @@ class CompanyAlreadyExists(ObjectAlreadyExist):
 class CompanyNotFound(ObjectNotFound):
     def __init__(self, identifier: Any, model_name: str = "company"):
         super().__init__(identifier, model_name)
+
+
+
+

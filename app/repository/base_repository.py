@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import update, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
+
 
 from app.model.base_models import BaseClass
 from app.service.сustom_exception import ObjectNotFound
@@ -69,7 +69,7 @@ class BaseRepository(Generic[ModelType]):
         db_row = await self.get_one(**params)
         if not db_row:
             raise ObjectNotFound(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Object not found",
+                identifier="none",
+                model_name="None"
             )
         return db_row
