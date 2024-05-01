@@ -8,7 +8,7 @@ from app.repository.action_repository import ActionRepository
 from app.repository.company_repository import CompanyRepository
 from app.repository.users_repository import UserRepository
 
-from app.schemas.action import CompanyUsersResponse
+from app.schemas.action import CompanyUsersResponse, AdminUsersResponse
 from app.schemas.user import UserDetail
 from app.service.action_service import ActionsService
 from app.db.postgres import get_session
@@ -49,3 +49,47 @@ async def get_company_users(
 ):
     return await actions_service.get_company_users(company_uuid=company_uuid, skip=skip, limit=limit,
                                                    user_uuid=current_user.uuid)
+
+
+@router.post("/company/{company_uuid}/assign_admin/{user_uuid}")
+async def assign_admin(
+        company_uuid: UUID,
+        user_uuid: UUID,
+        current_user: UserDetail = Depends(AuthService.get_current_user),
+        actions_service: ActionsService = Depends(get_actions_service)
+):
+    return await actions_service.assign_admin(
+        company_uuid=company_uuid,
+        user_uuid=user_uuid,
+        owner_uuid=current_user.uuid
+    )
+
+
+@router.post("/company/{company_uuid}/remove_admin/{user_uuid}")
+async def remove_admin(
+        company_uuid: UUID,
+        user_uuid: UUID,
+        current_user: UserDetail = Depends(AuthService.get_current_user),
+        actions_service: ActionsService = Depends(get_actions_service)
+):
+    return await actions_service.remove_admin(
+        company_uuid=company_uuid,
+        user_uuid=user_uuid,
+        owner_uuid=current_user.uuid
+    )
+
+
+@router.get("/company/{company_uuid}/admins", response_model=AdminUsersResponse)
+async def get_admin_users(
+        company_uuid: UUID,
+        current_user: UserDetail = Depends(AuthService.get_current_user),
+        actions_service: ActionsService = Depends(get_actions_service),
+        skip: int = 1,
+        limit: int = 10
+):
+    return await actions_service.get_company_admin(
+        company_uuid=company_uuid,
+        owner_uuid=current_user.uuid,
+        skip=skip,
+        limit=limit
+    )
