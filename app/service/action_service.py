@@ -94,11 +94,11 @@ class ActionsService:
         if company.owner_uuid != owner_uuid:
             raise UserPermissionDenied()
 
-        admin_users = await self.action_repository.get_many(
+        users = await self.action_repository.get_many(
             company_uuid=company_uuid,
             role=CompanyRole.ADMIN,
             skip=skip,
             limit=limit
         )
 
-        return {"admin_users": admin_users}
+        return {"users": users}

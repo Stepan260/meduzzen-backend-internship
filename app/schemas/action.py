@@ -71,4 +71,4 @@ class CompanyUsersResponse(BaseModel):
 
 
 class AdminUsersResponse(BaseModel):
-    admin_users: List[AdminUser]
+    users: List[AdminUser]
