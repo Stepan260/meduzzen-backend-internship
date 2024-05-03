@@ -49,5 +49,14 @@ class CompanyNotFound(ObjectNotFound):
         super().__init__(identifier, model_name)
 
 
+"""Quizzes handlers"""
 
 
+class InsufficientQuizQuestions(Exception):
+    def __init__(self) -> None:
+        super().__init__(f"Quiz must contain at least two questions.")
+
+
+class InsufficientAnswerChoices(Exception):
+    def __init__(self) -> None:
+        super().__init__(f"Question must have at least two answer choices.")

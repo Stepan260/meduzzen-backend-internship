@@ -10,7 +10,7 @@ from app.repository.question_repository import QuestionRepository
 from app.schemas.question import QuestionUpdate, FullQuestionUpdate
 
 from app.schemas.quizzes import QuizCreate, UpdateQuiz, FullUpdateQuizResponse
-from app.service.сustom_exception import UserPermissionDenied
+from app.service.сustom_exception import UserPermissionDenied, InsufficientQuizQuestions, InsufficientAnswerChoices
 from app.utils.enum import CompanyRole
 
 
@@ -40,17 +40,11 @@ class QuizService:
             raise UserPermissionDenied()
 
         if len(quiz_create.questions) < 2:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Quiz must contain at least two questions."
-            )
+            raise InsufficientQuizQuestions()
 
         for question in quiz_create.questions:
             if len(question.answer_choices) < 2:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Each question must have at least two answer choices."
-                )
+                raise InsufficientAnswerChoices()
 
         quiz_without_question = quiz_create.model_dump(exclude={'questions'})
         quiz = await self.quiz_repository.create_one(quiz_without_question)
@@ -63,10 +57,7 @@ class QuizService:
 
         quiz.questions = questions
 
-        return dict(
-            message="Quiz created successfully.",
-            quiz=quiz
-        )
+        return {"message": "create successful", "quiz": quiz}
 
     async def quiz_update(self, quiz_uuid: UUID, quiz_update: UpdateQuiz, user_uuid: UUID) -> FullUpdateQuizResponse:
         quiz = await self.quiz_repository.get_one_by_params_or_404(uuid=quiz_uuid)

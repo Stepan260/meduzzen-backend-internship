@@ -74,7 +74,7 @@ async def delete_quiz(
 
 
 @router.get("/quizzes/", response_model=QizzesListResponse)
-async def get_all_qizzes(
+async def get_all_quizzes(
         company_service: QuizService = Depends(get_quizzes_service),
         current_user: UserDetail = Depends(AuthService.get_current_user),
         skip: int = 1, limit: int = 10):
