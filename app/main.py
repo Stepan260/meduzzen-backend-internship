@@ -6,7 +6,7 @@ from starlette import status
 
 from app.сore.config import settings
 from app.routers.routers import router
-from app.routers import user, auth, company, action, invites, requested
+from app.routers import user, auth, company, action, invites, requested, quizzes
 from app.service.сustom_exception import ObjectNotFound, UserPermissionDenied, ObjectAlreadyExist, ActionError
 
 app = FastAPI()
@@ -18,6 +18,7 @@ app.include_router(company.router)
 app.include_router(action.router)
 app.include_router(invites.router)
 app.include_router(requested.router)
+app.include_router(quizzes.router)
 
 app.add_middleware(
     CORSMiddleware,
