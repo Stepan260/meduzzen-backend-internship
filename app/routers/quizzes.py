@@ -1,15 +1,17 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.repository.users_repository import UserRepository
 from app.repository.action_repository import ActionRepository
 from app.repository.company_repository import CompanyRepository
 from app.repository.question_repository import QuestionRepository
 from app.repository.quizzes_repository import QuizRepository
+from app.repository.result_repository import ResultRepository
 from app.schemas.question import QuestionUpdate, FullQuestionUpdate
-from app.schemas.quizzes import QuizCreate, QuizResponse, FullQuizResponse, UpdateQuiz, FullUpdateQuizResponse, \
-    QizzesListResponse
+from app.schemas.quizzes import QuizCreate, FullQuizResponse, UpdateQuiz, FullUpdateQuizResponse, \
+    QizzesListResponse, QuizTake, TestResultCreateSchema
 from app.schemas.user import UserDetail
 from app.service.auth_service import AuthService
 from app.service.quizzes_service import QuizService
@@ -21,6 +23,8 @@ async def get_quizzes_service(session: AsyncSession = Depends(get_session)) -> Q
     action_repository = ActionRepository(session)
     company_repository = CompanyRepository(session)
     question_repository = QuestionRepository(session)
+    user_repository = UserRepository(session)
+    result_repository = ResultRepository(session)
 
     return QuizService(
         session=session,
@@ -28,6 +32,8 @@ async def get_quizzes_service(session: AsyncSession = Depends(get_session)) -> Q
         action_repository=action_repository,
         company_repository=company_repository,
         question_repository=question_repository,
+        user_repository=user_repository,
+        result_repository=result_repository
     )
 
 
@@ -74,8 +80,22 @@ async def delete_quiz(
 
 
 @router.get("/quizzes/", response_model=QizzesListResponse)
-async def get_all_qizzes(
+async def get_all_quizzes(
         company_service: QuizService = Depends(get_quizzes_service),
         current_user: UserDetail = Depends(AuthService.get_current_user),
         skip: int = 1, limit: int = 10):
     return await company_service.get_all_quizzes_by_company(skip=skip, limit=limit)
+
+
+@router.post("/quizzes/{quiz_uuid}/take_quiz", response_model=TestResultCreateSchema)
+async def take_quiz(
+        quiz_uuid: UUID,
+        answers: QuizTake,
+        quiz_service: QuizService = Depends(get_quizzes_service),
+        current_user: UserDetail = Depends(AuthService.get_current_user)
+):
+    return await quiz_service.take_quiz(
+        user_uuid=current_user.uuid,
+        quiz_uuid=quiz_uuid,
+        answers=answers,
+    )

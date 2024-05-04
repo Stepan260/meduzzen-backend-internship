@@ -3,13 +3,16 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.model.quizzes import TestResult
 from app.repository.action_repository import ActionRepository
 from app.repository.company_repository import CompanyRepository
 from app.repository.quizzes_repository import QuizRepository
 from app.repository.question_repository import QuestionRepository
+from app.repository.result_repository import ResultRepository
+from app.repository.users_repository import UserRepository
 from app.schemas.question import QuestionUpdate, FullQuestionUpdate
 
-from app.schemas.quizzes import QuizCreate, UpdateQuiz, FullUpdateQuizResponse
+from app.schemas.quizzes import QuizCreate, UpdateQuiz, FullUpdateQuizResponse, QuizTake
 from app.service.сustom_exception import UserPermissionDenied
 from app.utils.enum import CompanyRole
 
@@ -21,13 +24,17 @@ class QuizService:
             quiz_repository: QuizRepository,
             question_repository: QuestionRepository,
             company_repository: CompanyRepository,
-            action_repository: ActionRepository
+            action_repository: ActionRepository,
+            user_repository: UserRepository,
+            result_repository: ResultRepository
     ):
         self.quiz_repository = quiz_repository
         self.session = session
         self.question_repository = question_repository
         self.company_repository = company_repository
         self.action_repository = action_repository
+        self.user_repository = user_repository
+        self.result_repository = result_repository
 
     async def create_quiz(self, quiz_create: QuizCreate, user_uuid: UUID):
         company = await self.company_repository.get_one(uuid=quiz_create.company_uuid)
@@ -119,8 +126,37 @@ class QuizService:
         if user_role.role not in [CompanyRole.ADMIN, CompanyRole.OWNER]:
             raise UserPermissionDenied()
 
-        await self.quiz_repository.delete_one(quiz_uuid)
+        await self.quiz_repository.delete_one(str(quiz_uuid))
 
     async def get_all_quizzes_by_company(self, skip: int = 1, limit: int = 10) -> dict:
         quizzes = await self.quiz_repository.get_many(skip=skip, limit=limit)
         return {'quizzes': quizzes}
+
+    async def take_quiz(self, user_uuid: UUID, quiz_uuid: UUID, answers: QuizTake,
+                        ) -> TestResult:
+        quiz = await self.quiz_repository.get_one_by_params_or_404(uuid=quiz_uuid)
+        company = await self.company_repository.get_one_by_params_or_404(uuid=quiz.company_uuid)
+
+        questions = await self.question_repository.get_many(skip=1, limit=100, quiz_uuid=quiz_uuid)
+
+        correct_answers = 0
+        total_questions = len(questions)
+
+        for question in questions:
+            user_answer = answers.answers.get(question.uuid)
+
+            if user_answer == question.correct_answer:
+                correct_answers += 1
+
+        score = (correct_answers / total_questions) * 100
+        rounded_score = int(round(score, 2))
+        result = dict(
+            user_uuid=user_uuid,
+            quiz_uuid=quiz_uuid,
+            company_uuid=company.uuid,
+            score=rounded_score,
+            total_questions=total_questions,
+            correct_answers=correct_answers,
+        )
+
+        return await self.result_repository.create_one(result)

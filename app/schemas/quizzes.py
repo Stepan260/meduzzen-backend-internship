@@ -1,5 +1,7 @@
+from datetime import datetime
+
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 from uuid import UUID
 
 from app.schemas.question import QuestionCreate, QuestionResponse
@@ -46,3 +48,18 @@ class FullUpdateQuizResponse(BaseModel):
 
 class QizzesListResponse(BaseModel):
     quizzes: List[QuizzesResponse]
+
+
+class QuizTake(BaseModel):
+    answers: Dict[UUID, Optional[str]]
+
+
+class TestResultCreateSchema(BaseModel):
+    user_uuid: UUID
+    quiz_uuid: UUID
+    company_uuid: UUID
+    correct_answers: int
+    total_questions: int
+    score: int
+
+
