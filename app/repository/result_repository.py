@@ -1,7 +1,7 @@
 from app.repository.base_repository import BaseRepository
-from app.model.quizzes import TestResult
+from app.model.quizzes import Result
 
 
-class ResultRepository(BaseRepository[TestResult]):
+class ResultRepository(BaseRepository[Result]):
     def __init__(self, session):
-        super().__init__(session=session, model=TestResult)
+        super().__init__(session=session, model=Result)

@@ -1,9 +1,11 @@
+from datetime import timedelta
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.model.quizzes import TestResult
+from app.db.redisdb import redis_connection
+from app.model.quizzes import Result
 from app.repository.action_repository import ActionRepository
 from app.repository.company_repository import CompanyRepository
 from app.repository.quizzes_repository import QuizRepository
@@ -133,7 +135,7 @@ class QuizService:
         return {'quizzes': quizzes}
 
     async def take_quiz(self, user_uuid: UUID, quiz_uuid: UUID, answers: QuizTake,
-                        ) -> TestResult:
+                        ) -> Result:
         quiz = await self.quiz_repository.get_one_by_params_or_404(uuid=quiz_uuid)
         company = await self.company_repository.get_one_by_params_or_404(uuid=quiz.company_uuid)
 
@@ -144,8 +146,13 @@ class QuizService:
 
         for question in questions:
             user_answer = answers.answers.get(question.uuid)
+            is_correct = user_answer == question.correct_answer
+            redis_key = f"user:{user_uuid}:company:{company.uuid}:quiz:{quiz_uuid}:question:{question.uuid}"
+            redis_value = f"{user_answer}|{is_correct}"
+            await redis_connection.set(redis_key, redis_value)
+            await redis_connection.expire(redis_key, timedelta(hours=48))
 
-            if user_answer == question.correct_answer:
+            if is_correct:
                 correct_answers += 1
 
         score = (correct_answers / total_questions) * 100
