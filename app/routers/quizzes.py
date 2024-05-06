@@ -11,7 +11,7 @@ from app.repository.quizzes_repository import QuizRepository
 from app.repository.result_repository import ResultRepository
 from app.schemas.question import QuestionUpdate, FullQuestionUpdate
 from app.schemas.quizzes import QuizCreate, FullQuizResponse, UpdateQuiz, FullUpdateQuizResponse, \
-    QizzesListResponse, QuizTake, TestResultCreateSchema
+    QizzesListResponse, QuizTake, TestResultCreateSchema, SendFile
 from app.schemas.user import UserDetail
 from app.service.auth_service import AuthService
 from app.service.quizzes_service import QuizService
@@ -99,3 +99,34 @@ async def take_quiz(
         quiz_uuid=quiz_uuid,
         answers=answers,
     )
+
+
+@router.get("/last_answers_list", response_model=SendFile)
+async def user_last_answers_list_route(
+        file_format: str,
+        quiz_service: QuizService = Depends(get_quizzes_service),
+        current_user: UserDetail = Depends(AuthService.get_current_user)
+):
+    current_user_uuid = current_user.uuid
+    return await quiz_service.get_user_quiz_results(user_uuid=current_user_uuid, file_format=file_format)
+
+
+@router.get("/{company_uuid}/last_answers_list/{user_uuid}", response_model=SendFile)
+async def company_last_answers_list_route(company_uuid: UUID,
+                                          file_format: str,
+                                          user_uuid: UUID,
+                                          quiz_service: QuizService = Depends(get_quizzes_service),
+                                          current_user: UserDetail = Depends(AuthService.get_current_user)
+                                          ):
+    return await quiz_service.company_last_answers_list(company_uuid=company_uuid, user_uuid=user_uuid,
+                                                        file_format=file_format)
+
+
+@router.get("/{company_id}/last_answers_list",  response_model=SendFile)
+async def company_last_answers_list_route(company_uuid: UUID,
+                                          file_format: str,
+                                          session: AsyncSession = Depends(get_session),
+                                          quiz_service: QuizService = Depends(get_quizzes_service),
+                                          current_user: UserDetail = Depends(AuthService.get_current_user)
+                                          ):
+    return await quiz_service.company_last_answers_list(company_uuid=company_uuid, file_format=file_format)

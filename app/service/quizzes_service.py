@@ -1,8 +1,10 @@
+import json
 from datetime import timedelta
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import FileResponse
 
 from app.db.redisdb import redis_connection
 from app.model.quizzes import Result
@@ -14,8 +16,9 @@ from app.repository.result_repository import ResultRepository
 from app.repository.users_repository import UserRepository
 from app.schemas.question import QuestionUpdate, FullQuestionUpdate
 
-from app.schemas.quizzes import QuizCreate, UpdateQuiz, FullUpdateQuizResponse, QuizTake
+from app.schemas.quizzes import QuizCreate, UpdateQuiz, FullUpdateQuizResponse, QuizTake, SendFile
 from app.service.сustom_exception import UserPermissionDenied
+from app.utils.content_redis import redis_file_content
 from app.utils.enum import CompanyRole
 
 
@@ -144,19 +147,33 @@ class QuizService:
         correct_answers = 0
         total_questions = len(questions)
 
+        quiz_result = {
+            'user_uuid': str(user_uuid),
+            'company_uuid': str(company.uuid),
+            'quiz_uuid': str(quiz.uuid),
+            'questions': []
+        }
+
         for question in questions:
             user_answer = answers.answers.get(question.uuid)
             is_correct = user_answer == question.correct_answer
-            redis_key = f"user:{user_uuid}:company:{company.uuid}:quiz:{quiz_uuid}:question:{question.uuid}"
-            redis_value = f"{user_answer}|{is_correct}"
-            await redis_connection.set(redis_key, redis_value)
-            await redis_connection.expire(redis_key, timedelta(hours=48))
 
+            quiz_result['questions'].append({
+                'question_uuid': str(question.uuid),
+                'user_answer': user_answer,
+                'is_correct': is_correct,
+            })
             if is_correct:
                 correct_answers += 1
 
         score = (correct_answers / total_questions) * 100
         rounded_score = int(round(score, 2))
+
+        redis_key = f"user:{user_uuid}:company:{company.uuid}:quiz:{quiz_uuid}:question:"
+        redis_value = json.dumps(quiz_result)
+        await redis_connection.set(redis_key, redis_value)
+        await redis_connection.expire(redis_key, timedelta(hours=48))
+
         result = dict(
             user_uuid=user_uuid,
             quiz_uuid=quiz_uuid,
@@ -167,3 +184,17 @@ class QuizService:
         )
 
         return await self.result_repository.create_one(result)
+
+
+    async def get_user_quiz_results(self, user_uuid: UUID, file_format: str) -> FileResponse:
+        query = f"user:{user_uuid}:company:*:quiz:*:question:"
+        return await redis_file_content(query=query, file_format=file_format)
+
+    async def get_company_quiz_answers_list(self, company_uuid: UUID, file_format: str, user_uuid: UUID) -> FileResponse:
+
+        query = f"user:{user_uuid}:company:{company_uuid}:quiz:*:*question:"
+        return await redis_file_content(query=query, file_format=file_format)
+
+    async def get_company_quiz_answers_list(self, company_uuid: UUID, file_format: str) -> FileResponse:
+        query = f"user:*:company:{company_uuid}:quiz:*:*question:"
+        return await redis_file_content(query=query, file_format=file_format)

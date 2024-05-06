@@ -63,3 +63,6 @@ class TestResultCreateSchema(BaseModel):
     score: int
 
 
+class SendFile(BaseModel):
+    file: bytes
+    filename: str
