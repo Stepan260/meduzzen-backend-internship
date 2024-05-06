@@ -7,7 +7,8 @@ from starlette import status
 from app.сore.config import settings
 from app.routers.routers import router
 from app.routers import user, auth, company, action, invites, requested, quizzes
-from app.service.сustom_exception import ObjectNotFound, UserPermissionDenied, ObjectAlreadyExist, ActionError
+from app.service.сustom_exception import ObjectNotFound, UserPermissionDenied, ObjectAlreadyExist, ActionError, \
+    InsufficientQuizQuestions, InsufficientAnswerChoices
 
 app = FastAPI()
 
@@ -58,6 +59,22 @@ async def handler_user_action_error(_: Request, exc: ActionError) -> JSONRespons
     return JSONResponse(
         content={"message": str(exc)},
         status_code=status.HTTP_409_CONFLICT
+    )
+
+
+@app.exception_handler(InsufficientQuizQuestions)
+async def handle_insufficient_quiz_questions(_: Request, exc: InsufficientQuizQuestions) -> JSONResponse:
+    return JSONResponse(
+        content={"message": str(exc)},
+        status_code=status.HTTP_400_BAD_REQUEST
+    )
+
+
+@app.exception_handler(InsufficientAnswerChoices)
+async def handle_insufficient_answer_choices(_: Request, exc: InsufficientAnswerChoices) -> JSONResponse:
+    return JSONResponse(
+        content={"message": str(exc)},
+        status_code=status.HTTP_400_BAD_REQUEST
     )
 
 

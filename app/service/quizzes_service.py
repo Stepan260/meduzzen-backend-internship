@@ -141,6 +141,7 @@ class QuizService:
     async def take_quiz(self, user_uuid: UUID, quiz_uuid: UUID, answers: QuizTake) -> Result:
         quiz = await self.quiz_repository.get_one_by_params_or_404(uuid=quiz_uuid)
         company = await self.company_repository.get_one_by_params_or_404(uuid=quiz.company_uuid)
+
         questions = await self.question_repository.get_many(skip=1, limit=100, quiz_uuid=quiz_uuid)
 
         quiz_result, correct_answers = self._calculate_correct_answers(user_uuid, company.uuid, quiz.uuid, questions,
@@ -162,6 +163,8 @@ class QuizService:
     def _calculate_correct_answers(self, user_uuid: UUID, company_uuid: UUID, quiz_uuid: UUID,
                                    questions: List[Question], answers: QuizTake) -> Tuple[Dict, int]:
         correct_answers = 0
+        total_questions = len(questions)
+
         quiz_result = {
             'user_uuid': str(user_uuid),
             'company_uuid': str(company_uuid),
@@ -172,6 +175,7 @@ class QuizService:
         for question in questions:
             user_answer = answers.answers.get(question.uuid)
             is_correct = user_answer == question.correct_answer
+
             quiz_result['questions'].append({
                 'question_uuid': str(question.uuid),
                 'user_answer': user_answer,
@@ -192,6 +196,18 @@ class QuizService:
         redis_value = json.dumps(quiz_result)
         await redis_connection.set(redis_key, redis_value)
         await redis_connection.expire(redis_key, timedelta(hours=48))
+
+        result = dict(
+            user_uuid=user_uuid,
+            quiz_uuid=quiz_uuid,
+            company_uuid=company.uuid,
+            score=rounded_score,
+            total_questions=total_questions,
+            correct_answers=correct_answers,
+        )
+
+        return await self.result_repository.create_one(result)
+
 
     async def get_user_quiz_results(self, user_uuid: UUID, file_format: str) -> FileResponse:
         query = f"user:{user_uuid}:company:*:quiz:*:question:"
