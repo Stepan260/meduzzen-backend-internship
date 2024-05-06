@@ -1,6 +1,6 @@
 import json
 from datetime import timedelta
-from typing import List, Tuple, Dict
+from typing import Tuple, Dict
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -20,7 +20,7 @@ from app.schemas.question import QuestionUpdate, FullQuestionUpdate
 
 from app.schemas.quizzes import QuizCreate, UpdateQuiz, FullUpdateQuizResponse
 from app.service.сustom_exception import UserPermissionDenied
-from app.utils.content_redis import redis_file_content
+from app.service.content_redis import redis_file_content
 from app.utils.enum import CompanyRole
 
 
