@@ -1,5 +1,6 @@
 import json
 from datetime import timedelta
+from typing import List, Tuple, Dict
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -7,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import FileResponse
 
 from app.db.redisdb import redis_connection
-from app.model.quizzes import Result
+from app.model.quizzes import Result, Question
 from app.repository.action_repository import ActionRepository
 from app.repository.company_repository import CompanyRepository
 from app.repository.quizzes_repository import QuizRepository
@@ -137,27 +138,40 @@ class QuizService:
         quizzes = await self.quiz_repository.get_many(skip=skip, limit=limit)
         return {'quizzes': quizzes}
 
-    async def take_quiz(self, user_uuid: UUID, quiz_uuid: UUID, answers: QuizTake,
-                        ) -> Result:
+    async def take_quiz(self, user_uuid: UUID, quiz_uuid: UUID, answers: QuizTake) -> Result:
         quiz = await self.quiz_repository.get_one_by_params_or_404(uuid=quiz_uuid)
         company = await self.company_repository.get_one_by_params_or_404(uuid=quiz.company_uuid)
-
         questions = await self.question_repository.get_many(skip=1, limit=100, quiz_uuid=quiz_uuid)
 
-        correct_answers = 0
-        total_questions = len(questions)
+        quiz_result, correct_answers = self._calculate_correct_answers(user_uuid, company.uuid, quiz.uuid, questions,
+                                                                       answers)
 
+        score, rounded_score = self._calculate_score(correct_answers, len(questions))
+        await self._handle_redis_data(user_uuid, company.uuid, quiz_uuid, quiz_result)
+
+        result = {
+            'user_uuid': user_uuid,
+            'quiz_uuid': quiz_uuid,
+            'company_uuid': company.uuid,
+            'score': rounded_score,
+            'total_questions': len(questions),
+            'correct_answers': correct_answers,
+        }
+        return await self.result_repository.create_one(result)
+
+    def _calculate_correct_answers(self, user_uuid: UUID, company_uuid: UUID, quiz_uuid: UUID,
+                                   questions: List[Question], answers: QuizTake) -> Tuple[Dict, int]:
+        correct_answers = 0
         quiz_result = {
             'user_uuid': str(user_uuid),
-            'company_uuid': str(company.uuid),
-            'quiz_uuid': str(quiz.uuid),
+            'company_uuid': str(company_uuid),
+            'quiz_uuid': str(quiz_uuid),
             'questions': []
         }
 
         for question in questions:
             user_answer = answers.answers.get(question.uuid)
             is_correct = user_answer == question.correct_answer
-
             quiz_result['questions'].append({
                 'question_uuid': str(question.uuid),
                 'user_answer': user_answer,
@@ -166,31 +180,25 @@ class QuizService:
             if is_correct:
                 correct_answers += 1
 
+        return quiz_result, correct_answers
+
+    def _calculate_score(self, correct_answers: int, total_questions: int) -> Tuple[float, int]:
         score = (correct_answers / total_questions) * 100
         rounded_score = int(round(score, 2))
+        return score, rounded_score
 
-        redis_key = f"user:{user_uuid}:company:{company.uuid}:quiz:{quiz_uuid}:question:"
+    async def _handle_redis_data(self, user_uuid: UUID, company_uuid: UUID, quiz_uuid: UUID, quiz_result: Dict):
+        redis_key = f"user:{user_uuid}:company:{company_uuid}:quiz:{quiz_uuid}:question:"
         redis_value = json.dumps(quiz_result)
         await redis_connection.set(redis_key, redis_value)
         await redis_connection.expire(redis_key, timedelta(hours=48))
-
-        result = dict(
-            user_uuid=user_uuid,
-            quiz_uuid=quiz_uuid,
-            company_uuid=company.uuid,
-            score=rounded_score,
-            total_questions=total_questions,
-            correct_answers=correct_answers,
-        )
-
-        return await self.result_repository.create_one(result)
-
 
     async def get_user_quiz_results(self, user_uuid: UUID, file_format: str) -> FileResponse:
         query = f"user:{user_uuid}:company:*:quiz:*:question:"
         return await redis_file_content(query=query, file_format=file_format)
 
-    async def get_company_quiz_answers_list(self, company_uuid: UUID, file_format: str, user_uuid: UUID) -> FileResponse:
+    async def get_company_quiz_answers_list(self, company_uuid: UUID, file_format: str,
+                                            user_uuid: UUID) -> FileResponse:
 
         query = f"user:{user_uuid}:company:{company_uuid}:quiz:*:*question:"
         return await redis_file_content(query=query, file_format=file_format)
