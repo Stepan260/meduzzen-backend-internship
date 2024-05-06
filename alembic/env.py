@@ -12,7 +12,7 @@ from app.model.base_models import Base
 from app.model.user import User
 from app.model.company import Company
 from app.model.action import Action
-
+from app.model.quizzes import Quiz, Question
 
 config = context.config
 section = config.config_ini_section
@@ -28,6 +28,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
+
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
