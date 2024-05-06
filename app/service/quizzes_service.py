@@ -17,7 +17,7 @@ from app.repository.result_repository import ResultRepository
 from app.repository.users_repository import UserRepository
 from app.schemas.question import QuestionUpdate, FullQuestionUpdate
 
-from app.schemas.quizzes import QuizCreate, UpdateQuiz, FullUpdateQuizResponse, QuizTake, SendFile
+from app.schemas.quizzes import QuizCreate, UpdateQuiz, FullUpdateQuizResponse, QuizTake
 from app.service.сustom_exception import UserPermissionDenied
 from app.utils.content_redis import redis_file_content
 from app.utils.enum import CompanyRole

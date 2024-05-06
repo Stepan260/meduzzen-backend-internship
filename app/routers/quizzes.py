@@ -122,7 +122,7 @@ async def company_last_answers_list_route(company_uuid: UUID,
                                                         file_format=file_format)
 
 
-@router.get("/{company_id}/last_answers_list",  response_model=SendFile)
+@router.get("/{company_id}/last_answers_list", response_model=SendFile)
 async def company_last_answers_list_route(company_uuid: UUID,
                                           file_format: str,
                                           session: AsyncSession = Depends(get_session),
@@ -130,3 +130,6 @@ async def company_last_answers_list_route(company_uuid: UUID,
                                           current_user: UserDetail = Depends(AuthService.get_current_user)
                                           ):
     return await quiz_service.company_last_answers_list(company_uuid=company_uuid, file_format=file_format)
+
+
+

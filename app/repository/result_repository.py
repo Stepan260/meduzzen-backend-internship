@@ -1,3 +1,8 @@
+from typing import List
+
+from click import UUID
+from select import select
+
 from app.repository.base_repository import BaseRepository
 from app.model.quizzes import Result
 
