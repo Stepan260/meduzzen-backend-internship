@@ -132,4 +132,11 @@ async def company_last_answers_list_route(company_uuid: UUID,
     return await quiz_service.company_last_answers_list(company_uuid=company_uuid, file_format=file_format)
 
 
+@router.get("/user/rating", response_model=float)
+async def get_user_rating(session: AsyncSession = Depends(get_session),
+                          quiz_service: QuizService = Depends(get_quizzes_service),
+                          current_user: UserDetail = Depends(AuthService.get_current_user)
+                          ):
+    user_uuid = current_user.uuid
 
+    return await quiz_service.get_user_rating(user_uuid)
