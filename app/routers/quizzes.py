@@ -1,3 +1,4 @@
+from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
@@ -11,7 +12,8 @@ from app.repository.quizzes_repository import QuizRepository
 from app.repository.result_repository import ResultRepository
 from app.schemas.question import QuestionUpdate, FullQuestionUpdate
 from app.schemas.quizzes import QuizCreate, FullQuizResponse, UpdateQuiz, FullUpdateQuizResponse, \
-    QizzesListResponse, QuizTake, TestResultCreateSchema, SendFile
+    QizzesListResponse, QuizTake, TestResultCreateSchema, SendFile, QuizAverageScoresResponse, QuizLastAttemptResponse, \
+    UserAverageScoresResponse, UserQuizAverageScoresResponse, UserLastAttemptResponse
 from app.schemas.user import UserDetail
 from app.service.auth_service import AuthService
 from app.service.quizzes_service import QuizService
@@ -140,3 +142,60 @@ async def get_user_rating(session: AsyncSession = Depends(get_session),
     user_uuid = current_user.uuid
 
     return await quiz_service.get_user_rating(user_uuid)
+
+
+@router.get("/user/rating", response_model=float)
+async def get_user_rating(session: AsyncSession = Depends(get_session),
+                          quiz_service: QuizService = Depends(get_quizzes_service),
+                          current_user: UserDetail = Depends(AuthService.get_current_user)
+                          ):
+    user_uuid = current_user.uuid
+
+    return await quiz_service.get_user_rating(user_uuid)
+
+
+@router.get("/quizzes/average_scores", response_model=List[QuizAverageScoresResponse])
+async def get_quizzes_average_scores_route(
+        session: AsyncSession = Depends(get_session),
+        quiz_service: QuizService = Depends(get_quizzes_service),
+        current_user: UserDetail = Depends(AuthService.get_current_user)
+):
+    return await quiz_service.get_quizzes_average_scores()
+
+
+@router.get("/companies/{company_uuid}/quizzes/last_attempts", response_model=List[QuizLastAttemptResponse])
+async def get_company_quizzes_last_attempts_route(
+        company_uuid: UUID,
+        session: AsyncSession = Depends(get_session),
+        quiz_service: QuizService = Depends(get_quizzes_service),
+        current_user: UserDetail = Depends(AuthService.get_current_user)
+):
+    user_uuid = current_user.uuid
+    return await quiz_service.get_company_quizzes_last_attempts(company_uuid, user_uuid)
+
+
+@router.get("/users/{user_uuid}/average_scores_over_time", response_model=List[UserAverageScoresResponse])
+async def get_users_average_scores_over_time(
+        session: AsyncSession = Depends(get_session),
+        quiz_service: QuizService = Depends(get_quizzes_service),
+        current_user: UserDetail = Depends(AuthService.get_current_user)
+):
+    return await quiz_service.get_users_average_scores_over_time()
+
+
+@router.get("/users/{user_uuid}/quizzes/average_scores_over_time", response_model=List[UserQuizAverageScoresResponse])
+async def get_user_quiz_average_scores_over_time(
+        user_uuid: UUID,
+        quiz_service: QuizService = Depends(get_quizzes_service),
+        current_user: UserDetail = Depends(AuthService.get_current_user)
+):
+    return await quiz_service.get_user_quiz_average_scores_over_time(user_uuid)
+
+
+@router.get("/companies/{company_uuid}/users/last_attempts", response_model=List[UserLastAttemptResponse])
+async def get_company_users_last_attempts(
+        company_uuid: UUID,
+        quiz_service: QuizService = Depends(get_quizzes_service),
+        current_user: UserDetail = Depends(AuthService.get_current_user)
+):
+    return await quiz_service.get_company_users_last_attempts(company_uuid)

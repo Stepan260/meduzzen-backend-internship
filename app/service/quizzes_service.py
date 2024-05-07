@@ -1,7 +1,7 @@
 import json
 import statistics
 from datetime import timedelta
-from typing import Tuple, Dict
+from typing import Dict, List
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -9,8 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import FileResponse
 
 from app.db.redisdb import redis_connection
-from app.model.company import Company
-from app.model.quizzes import Result, Question, Quiz
+from app.model.quizzes import Result
 from app.repository.action_repository import ActionRepository
 from app.repository.company_repository import CompanyRepository
 from app.repository.quizzes_repository import QuizRepository
@@ -19,10 +18,13 @@ from app.repository.result_repository import ResultRepository
 from app.repository.users_repository import UserRepository
 from app.schemas.question import QuestionUpdate, FullQuestionUpdate
 
-from app.schemas.quizzes import QuizCreate, UpdateQuiz, FullUpdateQuizResponse, QuizTake
-from app.service.сustom_exception import UserPermissionDenied
+from app.schemas.quizzes import (QuizCreate, UpdateQuiz, FullUpdateQuizResponse, QuizTake, QuizLastAttemptResponse,
+                                 UserQuizAverageScoresResponse, UserLastAttemptResponse)
+
+from app.service.сustom_exception import UserPermissionDenied, CompanyNotFound
 from app.service.content_redis import redis_file_content
 from app.utils.enum import CompanyRole
+from app.utils.Analitics import calculate_user_average_scores_over_time, calculate_user_quiz_average_scores_over_time
 
 
 class QuizService:
@@ -216,3 +218,105 @@ class QuizService:
     async def get_company_quiz_answers_list(self, company_uuid: UUID, file_format: str) -> FileResponse:
         query = f"user:*:company:{company_uuid}:quiz:*:*question:"
         return await redis_file_content(query=query, file_format=file_format)
+
+    async def get_user_rating(self, user_uuid: UUID) -> float:
+
+        results = await self.result_repository.get_many(user_uuid=user_uuid, skip=1, limit=1000)
+
+        if not results:
+            return 0.0
+
+        scores = [result.score for result in results]
+
+        average_rating = statistics.mean(scores)
+
+        return average_rating
+
+    async def get_quizzes_average_scores(self) -> List[Dict]:
+
+        results = await self.result_repository.get_many(skip=1, limit=1000)
+
+        quiz_average_scores = {}
+
+        for result in results:
+            quiz_uuid = result.quiz_uuid
+            score = result.score
+            created_at = result.created_at
+
+            if quiz_uuid not in quiz_average_scores:
+                quiz_average_scores[quiz_uuid] = {
+                    "quiz_uuid": quiz_uuid,
+                    "average_scores": []
+                }
+
+            quiz_average_scores[quiz_uuid]["average_scores"].append({
+                "score": score,
+                "created_at": created_at
+            })
+
+        return list(quiz_average_scores.values())
+
+    async def get_company_quizzes_last_attempts(self, company_uuid: UUID, user_uuid: UUID) -> List[
+        QuizLastAttemptResponse]:
+
+        user_role = await self.action_repository.get_one_by_params_or_404(
+            company_uuid=company_uuid,
+            user_uuid=user_uuid
+        )
+        if user_role.role not in [CompanyRole.ADMIN, CompanyRole.OWNER]:
+            raise UserPermissionDenied()
+
+        last_attempts_dict = {}
+
+        results = await self.result_repository.get_many(
+            skip=1,
+            limit=1000,
+            company_uuid=company_uuid
+        )
+
+        for result in results:
+            quiz_uuid = result.quiz_uuid
+            last_attempt_time = result.created_at
+
+            if quiz_uuid not in last_attempts_dict:
+                quiz = await self.quiz_repository.get_one_by_params_or_404(uuid=quiz_uuid)
+                last_attempts_dict[quiz_uuid] = {
+                    "quiz_uuid": quiz.uuid,
+                    "quiz_name": quiz.name,
+                    "last_attempt_time": last_attempt_time
+                }
+
+        return [QuizLastAttemptResponse(**data) for data in last_attempts_dict.values()]
+
+    async def get_users_average_scores_over_time(self) -> List[Dict]:
+        return await calculate_user_average_scores_over_time(self.result_repository)
+
+    async def get_user_quiz_average_scores_over_time(self, user_uuid: UUID) -> List[UserQuizAverageScoresResponse]:
+        return await calculate_user_quiz_average_scores_over_time(self.result_repository, user_uuid)
+
+    async def get_company_users_last_attempts(
+            self, company_uuid: UUID
+    ) -> List[UserLastAttemptResponse]:
+
+        results = await self.result_repository.get_many(
+            company_uuid=company_uuid, skip=1, limit=1000
+        )
+
+        if not company_uuid:
+            raise CompanyNotFound(identifier='uuid')
+
+        user_last_attempts = {}
+
+        for result in results:
+            user_uuid = result.user_uuid
+            created_at = result.created_at
+
+            if user_uuid not in user_last_attempts or created_at > user_last_attempts[user_uuid]:
+                user_last_attempts[user_uuid] = created_at
+
+        user_last_attempts_list = [
+            UserLastAttemptResponse(user_uuid=user_uuid, last_attempt_time=last_attempt_time)
+            for user_uuid, last_attempt_time in user_last_attempts.items()
+        ]
+
+        return user_last_attempts_list

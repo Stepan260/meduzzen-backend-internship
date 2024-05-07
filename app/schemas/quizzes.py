@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from pydantic import BaseModel
 from typing import List, Optional, Dict
@@ -66,3 +66,36 @@ class TestResultCreateSchema(BaseModel):
 class SendFile(BaseModel):
     file: bytes
     filename: str
+
+
+class AverageScoreWithDate(BaseModel):
+    score: float
+    created_at: datetime
+
+
+class QuizAverageScoresResponse(BaseModel):
+    quiz_uuid: UUID
+    average_scores: List[AverageScoreWithDate]
+
+
+class QuizLastAttemptResponse(BaseModel):
+    quiz_uuid: UUID
+    quiz_name: str
+    last_attempt_time: datetime
+
+
+class UserAverageScoresResponse(BaseModel):
+    user_uuid: UUID
+    date_period: date
+    average_score: float
+
+
+class UserQuizAverageScoresResponse(BaseModel):
+    quiz_uuid: UUID
+    date_period: date
+    average_score: float
+
+
+class UserLastAttemptResponse(BaseModel):
+    user_uuid: UUID
+    last_attempt_time: datetime
