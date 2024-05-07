@@ -12,7 +12,7 @@ from app.model.base_models import Base
 from app.model.user import User
 from app.model.company import Company
 from app.model.action import Action
-from app.model.quizzes import Quiz, Question
+from app.model.quizzes import Quiz, Question, Result
 
 config = context.config
 section = config.config_ini_section

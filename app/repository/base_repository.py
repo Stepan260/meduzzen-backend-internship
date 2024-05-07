@@ -73,3 +73,5 @@ class BaseRepository(Generic[ModelType]):
                 model_name="None"
             )
         return db_row
+
+

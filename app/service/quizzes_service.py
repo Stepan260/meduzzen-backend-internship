@@ -1,16 +1,27 @@
+import json
+import statistics
+from datetime import timedelta
+from typing import Tuple, Dict
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import FileResponse
 
+from app.db.redisdb import redis_connection
+from app.model.company import Company
+from app.model.quizzes import Result, Question, Quiz
 from app.repository.action_repository import ActionRepository
 from app.repository.company_repository import CompanyRepository
 from app.repository.quizzes_repository import QuizRepository
 from app.repository.question_repository import QuestionRepository
+from app.repository.result_repository import ResultRepository
+from app.repository.users_repository import UserRepository
 from app.schemas.question import QuestionUpdate, FullQuestionUpdate
 
-from app.schemas.quizzes import QuizCreate, UpdateQuiz, FullUpdateQuizResponse
-from app.service.сustom_exception import UserPermissionDenied, InsufficientQuizQuestions, InsufficientAnswerChoices
+from app.schemas.quizzes import QuizCreate, UpdateQuiz, FullUpdateQuizResponse, QuizTake
+from app.service.сustom_exception import UserPermissionDenied
+from app.service.content_redis import redis_file_content
 from app.utils.enum import CompanyRole
 
 
@@ -21,13 +32,17 @@ class QuizService:
             quiz_repository: QuizRepository,
             question_repository: QuestionRepository,
             company_repository: CompanyRepository,
-            action_repository: ActionRepository
+            action_repository: ActionRepository,
+            user_repository: UserRepository,
+            result_repository: ResultRepository
     ):
         self.quiz_repository = quiz_repository
         self.session = session
         self.question_repository = question_repository
         self.company_repository = company_repository
         self.action_repository = action_repository
+        self.user_repository = user_repository
+        self.result_repository = result_repository
 
     async def create_quiz(self, quiz_create: QuizCreate, user_uuid: UUID):
         company = await self.company_repository.get_one(uuid=quiz_create.company_uuid)
@@ -40,11 +55,17 @@ class QuizService:
             raise UserPermissionDenied()
 
         if len(quiz_create.questions) < 2:
-            raise InsufficientQuizQuestions()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Quiz must contain at least two questions."
+            )
 
         for question in quiz_create.questions:
             if len(question.answer_choices) < 2:
-                raise InsufficientAnswerChoices()
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Each question must have at least two answer choices."
+                )
 
         quiz_without_question = quiz_create.model_dump(exclude={'questions'})
         quiz = await self.quiz_repository.create_one(quiz_without_question)
@@ -57,7 +78,10 @@ class QuizService:
 
         quiz.questions = questions
 
-        return {"message": "create successful", "quiz": quiz}
+        return dict(
+            message="Quiz created successfully.",
+            quiz=quiz
+        )
 
     async def quiz_update(self, quiz_uuid: UUID, quiz_update: UpdateQuiz, user_uuid: UUID) -> FullUpdateQuizResponse:
         quiz = await self.quiz_repository.get_one_by_params_or_404(uuid=quiz_uuid)
@@ -110,8 +134,85 @@ class QuizService:
         if user_role.role not in [CompanyRole.ADMIN, CompanyRole.OWNER]:
             raise UserPermissionDenied()
 
-        await self.quiz_repository.delete_one(quiz_uuid)
+        await self.quiz_repository.delete_one(str(quiz_uuid))
 
     async def get_all_quizzes_by_company(self, skip: int = 1, limit: int = 10) -> dict:
         quizzes = await self.quiz_repository.get_many(skip=skip, limit=limit)
         return {'quizzes': quizzes}
+
+    async def take_quiz(self, user_uuid: UUID, quiz_uuid: UUID, answers: QuizTake) -> Result:
+        quiz = await self.quiz_repository.get_one_by_params_or_404(uuid=quiz_uuid)
+        company = await self.company_repository.get_one_by_params_or_404(uuid=quiz.company_uuid)
+        questions = await self.question_repository.get_many(skip=1, limit=100, quiz_uuid=quiz_uuid)
+
+        quiz_result, correct_answers, total_questions = await self.process_answers(user_uuid, quiz, questions, answers)
+
+        score, rounded_score = self.calculate_score(correct_answers, total_questions)
+
+        await self._save_to_redis(user_uuid, company, quiz_uuid, quiz_result)
+
+        return await self.create_result_entry(user_uuid, quiz_uuid, company, rounded_score, total_questions,
+                                              correct_answers)
+
+    async def process_answers(self, user_uuid: UUID, quiz, questions, answers: QuizTake):
+        correct_answers = 0
+        total_questions = len(questions)
+        quiz_result = {
+            'user_uuid': str(user_uuid),
+            'company_uuid': str(quiz.company_uuid),
+            'quiz_uuid': str(quiz.uuid),
+            'questions': []
+        }
+
+        for question in questions:
+            user_answer = answers.answers.get(question.uuid)
+            is_correct = user_answer == question.correct_answer
+
+            quiz_result['questions'].append({
+                'question_uuid': str(question.uuid),
+                'user_answer': user_answer,
+                'is_correct': is_correct,
+            })
+
+            if is_correct:
+                correct_answers += 1
+
+        return quiz_result, correct_answers, total_questions
+
+    def calculate_score(self, correct_answers, total_questions):
+        score = (correct_answers / total_questions) * 100
+        rounded_score = int(round(score, 2))
+        return score, rounded_score
+
+    async def _save_to_redis(self, user_uuid: UUID, company, quiz_uuid, quiz_result):
+        redis_key = f"user:{user_uuid}:company:{company.uuid}:quiz:{quiz_uuid}:question:"
+        redis_value = json.dumps(quiz_result)
+        await redis_connection.set(redis_key, redis_value)
+        await redis_connection.expire(redis_key, timedelta(hours=48))
+
+    async def create_result_entry(self, user_uuid: UUID, quiz_uuid: UUID, company, rounded_score, total_questions,
+                                  correct_answers):
+        result = dict(
+            user_uuid=user_uuid,
+            quiz_uuid=quiz_uuid,
+            company_uuid=company.uuid,
+            score=rounded_score,
+            total_questions=total_questions,
+            correct_answers=correct_answers,
+        )
+
+        return await self.result_repository.create_one(result)
+
+    async def get_user_quiz_results(self, user_uuid: UUID, file_format: str) -> FileResponse:
+        query = f"user:{user_uuid}:company:*:quiz:*:question:"
+        return await redis_file_content(query=query, file_format=file_format)
+
+    async def get_company_quiz_answers_list(self, company_uuid: UUID, file_format: str,
+                                            user_uuid: UUID) -> FileResponse:
+
+        query = f"user:{user_uuid}:company:{company_uuid}:quiz:*:*question:"
+        return await redis_file_content(query=query, file_format=file_format)
+
+    async def get_company_quiz_answers_list(self, company_uuid: UUID, file_format: str) -> FileResponse:
+        query = f"user:*:company:{company_uuid}:quiz:*:*question:"
+        return await redis_file_content(query=query, file_format=file_format)
