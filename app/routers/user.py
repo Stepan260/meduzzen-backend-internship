@@ -25,17 +25,17 @@ async def create_user(user_create: SignUpRequest,
     return await user_service.create_user(user_create.dict())
 
 
-@router.get('/{user_id}', response_model=UserBase)
-async def get_user_by_id(user_id: UUID,
+@router.get('/{user_uuid}', response_model=UserBase)
+async def get_user_by_id(user_uuid: UUID,
                          user_service: UserService = Depends(get_user_service)):
-    return await user_service.get_user_by_id(user_id)
+    return await user_service.get_user_by_id(user_uuid)
 
 
-@router.put('/{user_id}', response_model=UserBase)
-async def update_user(user_id: UUID, user_update: UserUpdate,
+@router.put('/{user_uuid}', response_model=UserBase)
+async def update_user(user_uuid: UUID, user_update: UserUpdate,
                       current_user: UserDetail = Depends(AuthService.get_current_user),
                       user_service: UserService = Depends(get_user_service)):
-    return await user_service.update_user(user_id, user_update, current_user)
+    return await user_service.update_user(user_uuid, user_update, current_user)
 
 
 @router.get("/users/", response_model=List[UserDetail])
@@ -44,9 +44,9 @@ async def get_all_users(skip: int = 1, limit: int = 10,
     return await user_service.get_all_users(skip=skip, limit=limit)
 
 
-@router.delete('/{user_id}', response_model=None, response_class=Response)
-async def delete_user(user_id: UUID,
+@router.delete('/{user_uuid}', response_model=None, response_class=Response)
+async def delete_user(user_uuid: UUID,
                       user_service: UserService = Depends(get_user_service),
                       current_user: UserDetail = Depends(AuthService.get_current_user)):
-    await user_service.delete_user(user_id, current_user)
+    await user_service.delete_user(user_uuid, current_user)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
