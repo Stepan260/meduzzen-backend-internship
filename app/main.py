@@ -6,7 +6,7 @@ from starlette import status
 
 from app.сore.config import settings
 from app.routers.routers import router
-from app.routers import user, auth, company, action, invites, requested, quizzes
+from app.routers import user, auth, company, action, invites, requested, quizzes,notification
 from app.service.сustom_exception import ObjectNotFound, UserPermissionDenied, ObjectAlreadyExist, ActionError, \
     InsufficientQuizQuestions, InsufficientAnswerChoices
 
@@ -20,6 +20,8 @@ app.include_router(action.router)
 app.include_router(invites.router)
 app.include_router(requested.router)
 app.include_router(quizzes.router)
+app.include_router(notification.router)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -76,6 +78,8 @@ async def handle_insufficient_answer_choices(_: Request, exc: InsufficientAnswer
         content={"message": str(exc)},
         status_code=status.HTTP_400_BAD_REQUEST
     )
+
+
 
 
 logger.add("app.log", rotation="250 MB", compression="zip", level="INFO")

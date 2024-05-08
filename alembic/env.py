@@ -13,6 +13,7 @@ from app.model.user import User
 from app.model.company import Company
 from app.model.action import Action
 from app.model.quizzes import Quiz, Question, Result
+from app.model.notification import Notification
 
 config = context.config
 section = config.config_ini_section

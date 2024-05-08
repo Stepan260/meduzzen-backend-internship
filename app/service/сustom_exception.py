@@ -60,3 +60,5 @@ class InsufficientQuizQuestions(Exception):
 class InsufficientAnswerChoices(Exception):
     def __init__(self) -> None:
         super().__init__(f"Question must have at least two answer choices.")
+
+
