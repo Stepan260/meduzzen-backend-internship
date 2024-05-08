@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.repository.notification_repository import NotificationRepository
 from app.repository.users_repository import UserRepository
 from app.repository.action_repository import ActionRepository
 from app.repository.company_repository import CompanyRepository
@@ -27,6 +28,7 @@ async def get_quizzes_service(session: AsyncSession = Depends(get_session)) -> Q
     question_repository = QuestionRepository(session)
     user_repository = UserRepository(session)
     result_repository = ResultRepository(session)
+    notification_repository = NotificationRepository(session)
 
     return QuizService(
         session=session,
@@ -35,7 +37,8 @@ async def get_quizzes_service(session: AsyncSession = Depends(get_session)) -> Q
         company_repository=company_repository,
         question_repository=question_repository,
         user_repository=user_repository,
-        result_repository=result_repository
+        result_repository=result_repository,
+        notification_repository=notification_repository
     )
 
 

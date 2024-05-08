@@ -12,6 +12,7 @@ from app.db.redisdb import redis_connection
 from app.model.quizzes import Result
 from app.repository.action_repository import ActionRepository
 from app.repository.company_repository import CompanyRepository
+from app.repository.notification_repository import NotificationRepository
 from app.repository.quizzes_repository import QuizRepository
 from app.repository.question_repository import QuestionRepository
 from app.repository.result_repository import ResultRepository
@@ -36,7 +37,8 @@ class QuizService:
             company_repository: CompanyRepository,
             action_repository: ActionRepository,
             user_repository: UserRepository,
-            result_repository: ResultRepository
+            result_repository: ResultRepository,
+            notification_repository: NotificationRepository
     ):
         self.quiz_repository = quiz_repository
         self.session = session
@@ -45,6 +47,7 @@ class QuizService:
         self.action_repository = action_repository
         self.user_repository = user_repository
         self.result_repository = result_repository
+        self.notification_repository = notification_repository
 
     async def create_quiz(self, quiz_create: QuizCreate, user_uuid: UUID):
         company = await self.company_repository.get_one(uuid=quiz_create.company_uuid)
@@ -80,8 +83,22 @@ class QuizService:
 
         quiz.questions = questions
 
+        actions = await self.action_repository.get_many(skip=1, limit=1000, company_uuid=quiz_create.company_uuid)
+
+        notification_text = f"A new quiz named '{quiz.name}' has been created in your company. Please take the quiz."
+
+        for action in actions:
+            user_uuid = action.user_uuid
+            notification_data = {
+                "user_uuid": user_uuid,
+                "text": notification_text,
+                "status": "unread"
+            }
+
+            await self.notification_repository.create_one(notification_data)
+
         return dict(
-            message="Quiz created successfully.",
+            message="Quiz created successfully.Notifications sent to users",
             quiz=quiz
         )
 
