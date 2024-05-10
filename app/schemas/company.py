@@ -32,4 +32,8 @@ class CompaniesListResponse(BaseModel):
     companies: List[FullCompany]
 
 
-
+class Companies(BaseModel):
+    owner_uuid: UUID
+    company_name: str
+    description: str
+    is_visible: bool

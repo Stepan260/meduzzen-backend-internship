@@ -1,7 +1,6 @@
 version: '3.7'
 
 services:
-
   api:
     container_name: meduzzen-backend-internship
     build:
@@ -42,6 +41,54 @@ services:
     networks:
       - api_network
 
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - api_network
+    volumes:
+      - .:/code
+    command:
+      sh -c "celery -A app.tasks.tasks worker --loglevel=warning --logfile=celery_worker.log"
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - api_network
+    volumes:
+      - .:/code
+    command: sh -c "celery -A app.tasks.tasks beat --loglevel=warning --logfile=celery_beat.log"
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - api_network
+    volumes:
+      - .:/code
+    ports:
+      - "5557:5555"
+    command: >
+      sh -c "celery flower --app=app.tasks --broker="${CELERY_BROKER_URL}
 
 volumes:
   postgres_data:
