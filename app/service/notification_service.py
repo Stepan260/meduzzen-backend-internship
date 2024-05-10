@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.model.notification import Notification
 from app.repository.notification_repository import NotificationRepository
 from app.service.сustom_exception import ObjectNotFound, UserPermissionDenied
 
